@@ -2,7 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using System.Text.Json;
 
-namespace PlayStream_Core.Controllers
+namespace galeriadefotos.Controllers
 {
     [Route("api/fotos")]
     [ApiController]
@@ -23,7 +23,7 @@ namespace PlayStream_Core.Controllers
             };
         }
 
-        // Endpoint 1. Visualización de Álbumes
+        // Endpoint 1. Visualización de álbumes
 
         [HttpGet("album/{albumId}")]
         public async Task<IActionResult> GetFotosPorAlbum(int albumId)
@@ -68,7 +68,7 @@ namespace PlayStream_Core.Controllers
             
         }
 
-        // Endpoint 2. Buscador de Fotos
+        // Endpoint 2. Buscador de fotos
 
         [HttpGet("buscar")]
         public async Task<IActionResult> BuscarFotos([FromQuery] string?  palabra)
@@ -128,7 +128,7 @@ namespace PlayStream_Core.Controllers
             return Ok(resultadoFinal);
         }
 
-        // Endpoint 3. Foto del Día
+        // Endpoint 3. Foto del día
         [HttpGet("aleatoria")]
         public async Task<IActionResult> GetFotoDelDia()
         {
@@ -177,7 +177,7 @@ namespace PlayStream_Core.Controllers
             return Ok(resultadoFinal);
         }
 
-        // Endpoint 4. Resumen del Álbum
+        // Endpoint 4. Resumen del álbum
 
         [HttpGet("album/{albumId}/resumen")]
         public async Task<IActionResult> GetResumenAlbum(int albumId)
