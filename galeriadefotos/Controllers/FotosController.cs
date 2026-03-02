@@ -163,7 +163,7 @@ namespace PlayStream_Core.Controllers
             return Ok(resultadoFinal);
         }
 
-        // 4. Resumen Rápido del Álbum
+        // 4. Resumen del Álbum
 
         [HttpGet("album/{albumId}/resumen")]
         public async Task<IActionResult> GetResumenAlbum(int albumId)
