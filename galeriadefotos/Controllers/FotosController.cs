@@ -23,7 +23,7 @@ namespace PlayStream_Core.Controllers
             };
         }
 
-        // 1. Visualización de Álbumes
+        // Endpoint 1. Visualización de Álbumes
 
         [HttpGet("album/{albumId}")]
         public async Task<IActionResult> GetFotosPorAlbum(int albumId)
@@ -32,7 +32,7 @@ namespace PlayStream_Core.Controllers
             {
                 return BadRequest(new
                 {
-                    error = "El ID del álbum es inválido. Debe ser un número entre 1 y 100."
+                    Error = "El ID del álbum es inválido, debe ser un número entre 1 y 100."
                 });
             }
 
@@ -45,7 +45,7 @@ namespace PlayStream_Core.Controllers
             {
                 return NotFound(new
                 {
-                    mensaje = $"¡Ups! No encontramos ninguna foto para el álbum {albumId}."
+                    Mensaje = $"No se encontró ninguna foto para el álbum {albumId}."
                 });
             }
 
@@ -59,25 +59,32 @@ namespace PlayStream_Core.Controllers
                 tamanio = "Completa"
             }).ToList();
 
-            var respuestaExitosa = new
+            return Ok(new
             {
                 albumId = albumId,
                 totalFotos = fotosTransformadas.Count,
                 fotos = fotosTransformadas
-            };
-
-            return Ok(respuestaExitosa);
+            });
+            
         }
 
-        // 2. Buscador de Fotos
+        // Endpoint 2. Buscador de Fotos
+
         [HttpGet("buscar")]
-        public async Task<IActionResult> BuscarFotos([FromQuery] string palabra)
+        public async Task<IActionResult> BuscarFotos([FromQuery] string?  palabra)
         {
-            if (string.IsNullOrWhiteSpace(palabra) || palabra.Length < 3)
+            if (string.IsNullOrWhiteSpace(palabra))
+            {
+                return BadRequest("Ingrese una palabra para buscar.");
+            }
+
+            bool tieneLetras = palabra.Any(char.IsLetter);
+
+            if (!tieneLetras)
             {
                 return BadRequest(new
                 {
-                    error = "Por favor, ingresa una palabra de al menos 3 letras para buscar."
+                    Mensaje = "La búsqueda debe ser una palabra válida."
                 });
             }
 
@@ -85,37 +92,44 @@ namespace PlayStream_Core.Controllers
             var jsonString = await response.Content.ReadAsStringAsync();
             var todasLasFotos = JsonSerializer.Deserialize<List<Foto>>(jsonString, _jsonOptions);
 
-            if (todasLasFotos == null) return NotFound();
+            if (todasLasFotos == null)
+            {
+                return NotFound();
+            }
 
             var palabraMinuscula = palabra.ToLower();
-
-            var fotosEncontradas = todasLasFotos
+            var fotosFiltradas = todasLasFotos
                 .Where(f => f.Title.ToLower().Contains(palabraMinuscula))
-                .Select(f => new
-                {
-                    id = f.Id,
-                    titulo = f.Title,
-                    albumId = f.AlbumId,
-                    urlCompleta = f.Url,
-                    miniatura = f.ThumbnailUrl
-                }).ToList();
+                .ToList();
 
-            if (fotosEncontradas.Count == 0)
+            if (fotosFiltradas.Count == 0)
             {
                 return NotFound(new
                 {
-                    mensaje = $"¡Ups! No encontramos ninguna foto que contenga la palabra '{palabra}' en su título."
+                    Mensaje = $"Disculpe, no se encontró ninguna foto que contenga la palabra '{palabra}' en su título."
                 });
             }
-            return Ok(new
+
+            var resultadoFinal = new
             {
                 palabraBuscada = palabra,
-                totalEncontradas = fotosEncontradas.Count,
-                resultados = fotosEncontradas
-            });
+                totalEncontradas = fotosFiltradas.Count,
+                totalMostradas = fotosFiltradas.Take(20).Count(),
+                fotos = fotosFiltradas.Take(20).Select(f => new
+                {
+                    id = f.Id,
+                    titulo = f.Title,
+                    tituloDestacado = f.Title.Replace(palabra, $"**{palabra}**", StringComparison.OrdinalIgnoreCase),
+                    albumId = f.AlbumId,
+                    miniatura = f.ThumbnailUrl
+                })
+            };
+
+            return Ok(resultadoFinal);
         }
-        // 3. Foto del Día
-        [HttpGet("dia")]
+
+        // Endpoint 3. Foto del Día
+        [HttpGet("aleatoria")]
         public async Task<IActionResult> GetFotoDelDia()
         {
             var random = new Random();
@@ -141,14 +155,14 @@ namespace PlayStream_Core.Controllers
             {
                 return NotFound(new
                 {
-                    error = "No se pudo encontrar la foto del día en este momento. Inténtalo más tarde."
+                    Error = "No se pudo encontrar la foto en este momento, intenta más tarde."
                 });
             }
 
             var resultadoFinal = new
             {
-                mensaje = "¡Foto del día!",
-                foto = new
+                Mensaje = "Foto del día:",
+                Foto = new
                 {
                     id = fotoEncontrada.Id,
                     titulo = fotoEncontrada.Title,
@@ -157,13 +171,13 @@ namespace PlayStream_Core.Controllers
                     miniatura = fotoEncontrada.ThumbnailUrl
                 },
 
-                sugerencia = $"/api/fotos/album/{fotoEncontrada.AlbumId}"
+                Sugerencia = $"Tambien puedes ver el album completo: /api/fotos/album/{fotoEncontrada.AlbumId}"
             };
 
             return Ok(resultadoFinal);
         }
 
-        // 4. Resumen del Álbum
+        // Endpoint 4. Resumen del Álbum
 
         [HttpGet("album/{albumId}/resumen")]
         public async Task<IActionResult> GetResumenAlbum(int albumId)
@@ -176,7 +190,7 @@ namespace PlayStream_Core.Controllers
             {
                 return NotFound(new
                 {
-                    mensaje = $"No se encontró el álbum {albumId} o no tiene fotos actualmente."
+                    Mensaje = $"No se encontró el álbum {albumId} o en este momento no tiene fotos."
                 });
             }
 
@@ -184,9 +198,7 @@ namespace PlayStream_Core.Controllers
             {
                 albumId = albumId,
                 totalFotos = fotosDelAlbum.Count,
-
                 muestras = fotosDelAlbum.Take(5).Select(f => f.ThumbnailUrl).ToList(),
-
                 primeraFoto = fotosDelAlbum.FirstOrDefault()?.Url,
             };
 
